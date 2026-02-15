@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FlatSeeker — Розширений пошук</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #1c1c1e;
+      --card: #2c2c2e;
+      --text: #fff;
+      --muted: #8e8e93;
+      --accent: #0a84ff;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    h1 {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0 0 16px;
+      font-weight: 600;
+    }
+    .section {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--muted);
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .checkbox-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 6px 0;
+      cursor: pointer;
+    }
+    .checkbox-wrap input { width: 20px; height: 20px; accent-color: var(--accent); }
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      max-width: 120px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #3a3a3c;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 16px;
+    }
+    label { font-size: 13px; color: var(--muted); margin-right: 6px; }
+    .interval-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .interval-btn {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid #3a3a3c;
+      background: var(--card);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .interval-btn.active { background: var(--accent); border-color: var(--accent); }
+    .save-btn {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      padding: 14px 20px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .city-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .city-name { font-weight: 500; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      margin-left: 8px;
+    }
+    .badge-blue { background: rgba(10, 132, 255, 0.25); color: #64d2ff; }
+    .badge-yellow { background: rgba(255, 204, 0, 0.25); color: #ffd60a; }
+    .emoji { font-style: normal; }
+  </style>
+</head>
+<body>
+  <h1>FlatSeeker — пошук та оренда квартир по всій Україні</h1>
+
+  <div class="section">
+    <div class="section-title">Локація *</div>
+    <div class="city-row">
+      <span class="city-name">Обране місто: <span id="cityName">Київ</span></span>
+      <span class="badge badge-blue">📈 За 10 днів: —</span>
+      <span class="badge badge-yellow">⚡ За добу: —</span>
+    </div>
+    <div class="checkbox-wrap">
+      <input type="checkbox" id="allCity" checked>
+      <label for="allCity">Все місто</label>
+    </div>
+    <div id="districts"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Кімнати</div>
+    <div class="row">
+      <div class="checkbox-wrap"><input type="checkbox" id="r1"><label for="r1">1</label></div>
+      <div class="checkbox-wrap"><input type="checkbox" id="r2"><label for="r2">2</label></div>
+      <div class="checkbox-wrap"><input type="checkbox" id="r3"><label for="r3">3</label></div>
+      <div class="checkbox-wrap"><input type="checkbox" id="r4"><label for="r4">4</label></div>
+      <div class="checkbox-wrap"><input type="checkbox" id="r5"><label for="r5">5</label></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Ціна</div>
+    <div class="row">
+      <label>Від:</label>
+      <input type="number" id="priceMin" placeholder="5000" min="0" value="">
+      <label>До:</label>
+      <input type="number" id="priceMax" placeholder="15000" min="0" value="">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Поверх</div>
+    <div class="row">
+      <label>Від:</label>
+      <input type="number" id="floorMin" placeholder="—" min="0">
+      <label>До:</label>
+      <input type="number" id="floorMax" placeholder="—" min="0">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Додаткові фільтри</div>
+    <div class="checkbox-wrap">
+      <input type="checkbox" id="noCommission">
+      <label for="noCommission"><span class="emoji">💰</span> Без комісії</label>
+    </div>
+    <div class="checkbox-wrap">
+      <input type="checkbox" id="petsAllowed">
+      <label for="petsAllowed"><span class="emoji">🐕</span> Можна з тваринами</label>
+    </div>
+    <div class="checkbox-wrap">
+      <input type="checkbox" id="childrenAllowed">
+      <label for="childrenAllowed"><span class="emoji">👶</span> Можна з дітьми</label>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Інтервали пошуку *</div>
+    <div class="interval-row" id="intervals">
+      <button type="button" class="interval-btn" data-min="1">1 хв.</button>
+      <button type="button" class="interval-btn" data-min="5">5 хв.</button>
+      <button type="button" class="interval-btn" data-min="15">15 хв.</button>
+      <button type="button" class="interval-btn" data-min="30">30 хв.</button>
+      <button type="button" class="interval-btn" data-min="60">1 год.</button>
+      <button type="button" class="interval-btn" data-min="120">2 год.</button>
+      <button type="button" class="interval-btn" data-min="360">6 год.</button>
+    </div>
+  </div>
+
+  <button type="button" class="save-btn" id="saveBtn">Зберегти 👍</button>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    let selectedInterval = 30;
+    document.querySelectorAll('.interval-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedInterval = parseInt(btn.dataset.min, 10);
+      });
+    });
+    document.querySelector('[data-min="30"]').classList.add('active');
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const rooms = [];
+      for (let i = 1; i <= 5; i++) {
+        if (document.getElementById('r' + i).checked) rooms.push(i);
+      }
+      const priceMin = document.getElementById('priceMin').value;
+      const priceMax = document.getElementById('priceMax').value;
+      const data = {
+        city: document.getElementById('cityName').textContent.trim() || 'Київ',
+        all_districts: document.getElementById('allCity').checked,
+        district_ids: [],
+        rooms_min: rooms.length ? Math.min(...rooms) : null,
+        rooms_max: rooms.length ? Math.max(...rooms) : null,
+        price_min: priceMin ? parseInt(priceMin, 10) : null,
+        price_max: priceMax ? parseInt(priceMax, 10) : null,
+        floor_min: document.getElementById('floorMin').value ? parseInt(document.getElementById('floorMin').value, 10) : null,
+        floor_max: document.getElementById('floorMax').value ? parseInt(document.getElementById('floorMax').value, 10) : null,
+        no_commission: document.getElementById('noCommission').checked,
+        pets_allowed: document.getElementById('petsAllowed').checked,
+        children_allowed: document.getElementById('childrenAllowed').checked,
+        interval_minutes: selectedInterval,
+        name: 'З веб-додатку'
+      };
+      if (tg?.sendData) {
+        tg.sendData(JSON.stringify(data));
+      } else {
+        console.log('Data:', data);
+        alert('Збережено (тест). У боті дані прийдуть через sendData.');
+      }
+    });
+  </script>
+</body>
+</html>
